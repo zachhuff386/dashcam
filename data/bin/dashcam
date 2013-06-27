@@ -1,0 +1,119 @@
+#!/usr/bin/python2
+import logging
+import optparse
+import signal
+import imp
+import sys
+import os
+
+parser = optparse.OptionParser()
+parser.add_option('-d', '--daemon', action='store_true',
+    help='Daemonize process')
+parser.add_option('-p', '--pidfile', type='string',
+    help='Path to create pid file')
+parser.add_option('-c', '--conf', type='string',
+    help='Path to configuration file')
+(options, args) = parser.parse_args()
+
+if options.conf:
+    config = imp.load_source('config', options.conf)
+else:
+    try:
+        config = imp.load_source('config', 'dashcam.conf')
+    except IOError:
+        config = imp.load_source('config', '/etc/dashcam.conf')
+
+
+if options.daemon:
+    pid = os.fork()
+    if pid > 0:
+        if options.pidfile:
+            with open(options.pidfile, 'w') as pid_file:
+                pid_file.write('%s' % pid)
+        sys.exit(0)
+
+input_device = None
+input_media_type = None
+input_width = None
+input_height = None
+input_frame_rate = None
+input_device_delay = None
+output_path = None
+output_muxer = None
+output_segment_length = None
+stream_state_path = None
+volume_level = None
+min_free_space = None
+light_gpio_pin = None
+log_file = None
+debug = None
+v4l2_ctrls = None
+
+if hasattr(config, 'input_device'):
+    input_device = config.input_device
+if hasattr(config, 'input_media_type'):
+    input_media_type = config.input_media_type
+if hasattr(config, 'input_width'):
+    input_width = config.input_width
+if hasattr(config, 'input_height'):
+    input_height = config.input_height
+if hasattr(config, 'input_frame_rate'):
+    input_frame_rate = config.input_frame_rate
+if hasattr(config, 'input_device_delay'):
+    input_device_delay = config.input_device_delay
+if hasattr(config, 'output_path'):
+    output_path = config.output_path
+if hasattr(config, 'output_muxer'):
+    output_muxer = config.output_muxer
+if hasattr(config, 'output_segment_length'):
+    output_segment_length = config.output_segment_length
+if hasattr(config, 'stream_state_path'):
+    stream_state_path = config.stream_state_path
+if hasattr(config, 'min_free_space'):
+    min_free_space = config.min_free_space
+if hasattr(config, 'volume_level'):
+    volume_level = config.volume_level
+if hasattr(config, 'light_gpio_pin'):
+    light_gpio_pin = config.light_gpio_pin
+if hasattr(config, 'log_file_path'):
+    log_file = config.log_file_path
+if hasattr(config, 'debug'):
+    debug = config.debug
+if hasattr(config, 'v4l2_ctrls'):
+    v4l2_ctrls = config.v4l2_ctrls
+
+if log_file:
+    log_file_handler = logging.FileHandler(filename=log_file)
+    log_file = log_file_handler.stream
+    logging.getLogger().setLevel(logging.DEBUG if debug else logging.INFO)
+    logging.getLogger().addHandler(log_file_handler)
+else:
+    logging.getLogger().setLevel(logging.DEBUG if debug else logging.INFO)
+
+import dashcam
+
+dash_cam = dashcam.DashCam(
+    input_device=input_device,
+    input_media_type=input_media_type,
+    input_width=input_width,
+    input_height=input_height,
+    input_frame_rate=input_frame_rate,
+    input_device_delay=input_device_delay,
+    output_path=output_path,
+    output_muxer=output_muxer,
+    output_segment_length=output_segment_length,
+    stream_state_path=stream_state_path,
+    min_free_space=min_free_space,
+    volume_level=volume_level,
+    light_gpio_pin=light_gpio_pin,
+    log_file=log_file,
+    debug=debug,
+    v4l2_ctrls=v4l2_ctrls,
+)
+
+def signal_handler(signal, frame):
+    dash_cam.stop()
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+dash_cam.start()

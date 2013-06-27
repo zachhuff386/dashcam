@@ -1,0 +1,10 @@
+[Unit]
+Description=Dashcam Daemon
+
+[Service]
+Type=forking
+PIDFile=/var/run/dashcamd.pid
+ExecStart=/usr/bin/dashcam --daemon --pidfile /var/run/dashcamd.pid
+
+[Install]
+WantedBy=multi-user.target
