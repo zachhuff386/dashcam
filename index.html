@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Dashcam by zachhuff386</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Dashcam</h1>
+        <h2>Raspberry Pi/BeagleBone Black Dashcam</h2>
+        <a href="https://github.com/zachhuff386/dashcam-dev" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h2>
+<a name="about" class="anchor" href="#about"><span class="octicon octicon-link"></span></a>About</h2>
+
+<p>C/Python dashcam built with Gstreamer for Raspberry Pi/BeagleBone Black. Currently in development. Supports webcams with hardware H264 or MJPEG encoders. Below are test videos of boot times and recording quality compared to a FineVu CR-500HD. Currently only records video, the audio in the test video is from the CR-500HD. The distortion at the start of both videos wasn't in the original videos but happened after cutting the clips in an editor. There is also some distortion in the video from the Raspberry Pi this is caused by usb issues which limit the camera from working above 720p. The BeagleBone Black is able to run at 1080p without any issues.</p>
+
+<h3>
+<a name="rasperry-pi--logitech-c920-and-finevu-cr-500hd" class="anchor" href="#rasperry-pi--logitech-c920-and-finevu-cr-500hd"><span class="octicon octicon-link"></span></a>Rasperry Pi + Logitech C920 and FineVu CR-500HD</h3>
+
+<p><iframe width="600" height="338" src="//www.youtube-nocookie.com/embed/uIr5TrsctiQ?rel=0" frameborder="0" allowfullscreen></iframe></p>
+
+
+
+<h3>
+<a name="beaglebone-black--logitech-c920-and-finevu-cr-500hd" class="anchor" href="#beaglebone-black--logitech-c920-and-finevu-cr-500hd"><span class="octicon octicon-link"></span></a>BeagleBone Black + Logitech C920 and FineVu CR-500HD</h3>
+
+<p><iframe width="600" height="338" src="//www.youtube-nocookie.com/embed/4CfveH7DjoU?rel=0" frameborder="0" allowfullscreen></iframe></p>
+
+
+
+<h4>
+<a name="boot-times" class="anchor" href="#boot-times"><span class="octicon octicon-link"></span></a>Boot Times</h4>
+
+<p>Raspberry Pi: 19s<br>
+FineVu CR-500HD: 26s<br>
+BeagleBone Black: 28s</p>
+
+<h4>
+<a name="storage" class="anchor" href="#storage"><span class="octicon octicon-link"></span></a>Storage</h4>
+
+<p>Raspberry Pi (16gb/720p/30fps/Logitech C920): 9 hrs 45 mins<br>
+BeagleBone Black (16gb/1080p/30fps/Logitech C920): 9 hrs 30 mins<br>
+FineVu CR-500HD (16gb/1080p/30fps): 3 hrs 30 mins</p>
+
+<h2>
+<a name="webcams" class="anchor" href="#webcams"><span class="octicon octicon-link"></span></a>Webcams</h2>
+
+<p>The best webcam to use is the Logitech C920 or any webcam with an H264 encoder supported by v4l2. Other webcams with MJPEG will work but MJPEG has very little compression so only about an hour of video will fit on a 16gb card. Run <code>v4l2-ctl --list-formats-ext</code> to check for supported formats and look for H264 or MJPG pixel formats.</p>
+
+<h2>
+<a name="required-parts" class="anchor" href="#required-parts"><span class="octicon octicon-link"></span></a>Required Parts</h2>
+
+<p>To use all the features you will need the parts below. The LED is used to display the status of the recording. The real time clock module is used to put the date and time in the filename of output videos.</p>
+
+<ul>
+<li>Raspberry Pi or BeagleBone Black</li>
+<li>Logitech C920</li>
+<li>Powered USB Hub</li>
+<li>[Optional] LED + resistor + wire + soldering iron</li>
+<li>[Optional] Real time clock module</li>
+</ul><h2>
+<a name="raspberry-pi-arch-linux-install" class="anchor" href="#raspberry-pi-arch-linux-install"><span class="octicon octicon-link"></span></a>Raspberry Pi Arch Linux Install</h2>
+
+<p>Connect the sd card and download Arch Linux ARM image. Unzip it and write it to the sd card. Full directions for Windows and Linx are on <a href="http://archlinuxarm.org/platforms/armv6/raspberry-pi">archlinuxarm.org</a>.</p>
+
+<pre><code># The link below may be out of date, goto the link above to find latest image
+$ wget http://archlinuxarm.org/os/rpi/archlinux-hf-2013-06-15.img.zip
+$ unzip archlinux-hf-2013-06-15.img.zip
+$ dd bs=1M if=archlinux-hf-2013-06-15.img of=/dev/sdX
+# Use gparted to extend root partition
+</code></pre>
+
+<h2>
+<a name="beaglebone-black-arch-linux-install" class="anchor" href="#beaglebone-black-arch-linux-install"><span class="octicon octicon-link"></span></a>BeagleBone Black Arch Linux Install</h2>
+
+<p>If you want to always boot from the sd card first connect BeagleBone Black with usb and rename the MLO file in the boot partition. If you don't rename the file you will need to hold the boot selection button when booting. Then fdisk the sd card to create partitions and extract the tarball's. Full directions for Linux are on <a href="http://archlinuxarm.org/platforms/armv7/beaglebone-black">archlinuxarm.org</a>.</p>
+
+<pre><code># List all disk divices, look for sd card
+$ fdisk -l
+# Fdisk the sd card
+$ fdisk /dev/sdX
+# Type o to clear partitions
+# Type n, enter, enter, enter, +64M
+# Type t then e
+# Type a
+# Type n, enter, enter, enter, enter
+# Type w to write partitions
+$ mkfs.vfat -F 16 /dev/sdX1
+$ mkfs.ext4 /dev/sdX2
+$ wget http://archlinuxarm.org/os/omap/BeagleBone-bootloader.tar.gz
+$ mkdir boot
+$ mount /dev/sdX1 boot
+# Tar command will print change ownership errors
+$ tar -xf BeagleBone-bootloader.tar.gz -C boot
+$ umount boot
+$ wget http://archlinuxarm.org/os/ArchLinuxARM-am33x-latest.tar.gz
+$ mkdir root
+$ mount /dev/sdX2 root
+$ tar -xf ArchLinuxARM-am33x-latest.tar.gz -C root
+$ umount root
+</code></pre>
+
+<h2>
+<a name="install" class="anchor" href="#install"><span class="octicon octicon-link"></span></a>Install</h2>
+
+<p>Connect sd card and network cable then power on the device.</p>
+
+<pre><code># Scan local network to find dhcp address of device
+$ nmap -sn 10.0.0.0/24
+# SSH to device
+$ ssh root@10.0.0.150
+# Update packages
+$ pacman -Syu
+# Install dev packages and yaourt to sync from AUR
+$ pacman -S base-devel yaourt
+# If you have a speaker install pygame to play dashcam starting sound
+$ pacman -S python2-pygame
+</code></pre>
+
+<p>For Raspberry Pi LED support install RPi.GPIO Python library.</p>
+
+<pre><code>$ yaourt -S python2-raspberry-gpio
+# Press n, y, y and enter
+</code></pre>
+
+<p>For BeagleBone Black LED support install BBIO.GPIO python library.</p>
+
+<pre><code>$ yaourt -S python2-bbio
+# Press n, y, y and enter
+</code></pre>
+
+<p>If you're using the Logitech C920 install the patched gst-plugins-good to fix support for C920.</p>
+
+<pre><code>$ yaourt -S gst-plugins-good-c920
+# Press n, y, y and enter
+</code></pre>
+
+<h2>
+<a name="dashcam-install" class="anchor" href="#dashcam-install"><span class="octicon octicon-link"></span></a>Dashcam Install</h2>
+
+<p>Install dashcam from AUR. Then create directory to store dashcam videos. To auto start on boot enable the systemd service. When the application starts two beeps will be played, when recording starts/stops the LED will turn on/off.</p>
+
+<pre><code>$ yaourt -S dashcam
+# Press n, y, y and enter
+$ mkdir -P /media
+$ systemctl enable dashcamd.service
+</code></pre>
+
+<h2>
+<a name="dashcam-configuration" class="anchor" href="#dashcam-configuration"><span class="octicon octicon-link"></span></a>Dashcam Configuration</h2>
+
+<p>Edit <code>/etc/dashcam.conf</code> to change dashcam settings. Below is an example configuration. After editing config run <code>systemctl start dashcamd.service</code> to start service or <code>dashcam</code> to test.</p>
+
+<pre><code>#!/usr/bin/python2
+# V4l2 input device
+input_device = '/dev/video0'
+# Webcam input media type. For H264 webcams use 'video/x-h264' for MJPEG
+# webcams use 'image/jpeg'. Check 'v4l2-ctl --list-formats-ext' to find
+# correct media type.
+input_media_type = 'video/x-h264'
+# Delay in microseconds between file segments. Sometimes the webcam will give
+# device is busy error if this value is too low. 10000 = 0.01 seconds.
+input_device_delay = 10000
+# Webcam width. Check 'v4l2-ctl --list-formats-ext' to get valid values.
+input_width = 1920
+# Webcam height. Check 'v4l2-ctl --list-formats-ext' to get valid values.
+input_height = 1080
+# Webcam frame rate. Check 'v4l2-ctl --list-formats-ext' to get valid values.
+input_frame_rate = 30
+# Output muxer. Can be 'avimux' for avi files or 'matroskamux' for mkv files.
+# If input_media_type is 'video/x-h264' then 'mp4mux' can also be used for
+# mp4 files.
+output_muxer = 'avimux'
+# Length in seconds of each video segment. A new video file will be created
+# at this interval.
+output_segment_length = 300
+# Output path for video files. If a real time clock is installed a strftime
+# formatted file name can be used '%Y_%m_%d_%H_%M_%S' will put the full date
+# and time into the filename. When using strftime the filename must be done
+# so that when the files are alphabetized the oldest file will be the first
+# in the list, this is used to auto delete old videos when space is low.
+# Using '%i' will add a four digit incremented number to the filename, after
+# reaching 9999 it will restart back at 0. When using '%i' it must be at the
+# end of the filename before the file extension and cannot be adjacent to any
+# %X strftime formatters.
+output_path = '/media/dashcam_%i.avi'
+# This file is used by the gstreamer process to communicate the state of the
+# stream to the python process which will turn the LED on and off.
+stream_state_path = '/var/run/dashcam_stream_state'
+# Decimal minimum percent of free space before the oldest videos are
+# automatically removed to make space for new videos. The space is checked
+# every second so even with a long file segment no more than 5% or 0.05
+# is necessary. Set to None without quotes to disable auto deletion.
+min_free_space = 0.05
+# Decimal percent volume level of dashcam starting beep. Python module
+# pygame must be installed for sound to work. Set to None without quotes to
+# disable sound.
+volume_level = 0.75
+# GPIO pin that the LED is connected to. If you connected the LED to the pins
+# shown in the readme the pin for the Raspberry Pi will be 13 and 'P8_10'
+# for the BeagleBone Black. GPIO package must be installed for LED to work.
+# Set to None without quotes to disable LED.
+light_gpio_pin = 13
+# Location of log file. Set to None without quotes to print output to console.
+log_file_path = '/var/log/dashcam.log'
+# Enable debug output.
+debug = True
+# Optional v4l2 ctrls to set. The autofocus on some webcams may not focus
+# properly, 0 is usually the best manual focus for dashcam. Brightness and
+# contrast can also be adjusted, run 'v4l2-ctl --list-ctrls' to get a full
+# list of available controls.
+# v4l2_ctrls = {
+#     'focus_auto': 0,
+#     'focus_absolute': 0,
+#     'brightness': 128,
+#     'contrast': 128,
+#     'saturation': 128,
+#     'sharpness': 128,
+# }
+</code></pre>
+
+<h2>
+<a name="led-setup" class="anchor" href="#led-setup"><span class="octicon octicon-link"></span></a>LED Setup</h2>
+
+<p>You will need an LED, resistor and wire. The LED, resistor and jumper wire with female connections are sold at Radio Shack. If you need a long wire for LED you can also cut apart a cat 5 ethernet cable and pull a wire pair out. The power coming from the BeagleBone Black or Raspberry Pi will be 3.3V, to get the minimum resistor use (3.3V - {LED voltage}) / ({LED current of LED} * 0.001) = resistor ohms. Example (3.3V - 2.6V) / (28mA * 0.001) = 25ohm. The higher the resistor above the minimum the dimmer the LED will be. Below is a picture of the brightness of some resistors.</p>
+
+<p><img src="http://zachhuff386.github.io/dashcam-dev/images/resistors.jpg" alt="Resistors"></p>
+
+<p><img src="http://zachhuff386.github.io/dashcam-dev/images/step_1.jpg" alt="Step 1"></p>
+
+<p>First look at the LED one the of wires will be longer and have a smaller plate inside the LED this is the positive/anode. Then clip the metal wires coming out of the LED and resistor.</p>
+
+<p><img src="http://zachhuff386.github.io/dashcam-dev/images/step_2.jpg" alt="Step 2"></p>
+
+<p>Solder the resistor and wires to the LED. It doesn't matter which side of the LED the resistor is on.</p>
+
+<p><img src="http://zachhuff386.github.io/dashcam-dev/images/step_3.jpg" alt="Step 3"></p>
+
+<p>Connect the LED to the pins shown below. The darker wire is the positive/anode.</p>
+
+<p><img src="http://zachhuff386.github.io/dashcam-dev/images/step_4a.jpg" alt="Step 4a"><img src="http://zachhuff386.github.io/dashcam-dev/images/step_4b.jpg" alt="Step 4b"></p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/zachhuff386/dashcam-dev/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/zachhuff386/dashcam-dev/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/zachhuff386/dashcam-dev"></a> is maintained by <a href="https://github.com/zachhuff386">zachhuff386</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-20492194-8");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
