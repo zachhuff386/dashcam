@@ -27,7 +27,7 @@ optdepends=(
 provides=("dashcam")
 conflicts=("dashcam")
 source=("${url}/archive/${pkgver}.tar.gz")
-sha256sums=("71ed97a1f872bd23046756600d39fa08498980e9835abbe3a549e6836aeba1d0")
+sha256sums=("CHANGE_ME")
 backup=("etc/dashcam.conf")
 
 build() {
