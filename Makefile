@@ -12,10 +12,6 @@ OBJS = \
 HEADERS = \
 	src/dashcam-stream.h
 
-ifneq ($(DESTDIR),)
-    PYTHON_ROOT = --root=$(DESTDIR)
-endif
-
 all: build/dashcam-stream
 
 build/dashcam-stream: src/dashcam-stream.c src/dashcam-stream.h
@@ -24,7 +20,7 @@ build/dashcam-stream: src/dashcam-stream.c src/dashcam-stream.h
 	$(PYTHON) build
 
 install: all
-	$(PYTHON) install $(PYTHON_ROOT) --prefix=/usr
+	$(PYTHON) install --root=$(DESTDIR)/ --prefix=/usr
 	$(TOUCH) $(DESTDIR)/etc/dashcam.confc
 	$(MKDIR) $(DESTDIR)/var/log
 	$(TOUCH) $(DESTDIR)/var/log/dashcam.log
