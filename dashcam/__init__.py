@@ -44,7 +44,7 @@ class DashCam:
             light_gpio_pin=None,
             log_file=None,
             debug=None,
-            v4l2_ctrls=None):
+            output_params=None):
         self._running = False
         self._stream_state = False
         self._light_state = False
@@ -80,7 +80,7 @@ class DashCam:
         self._light_gpio_pin = light_gpio_pin
         self._log_file = log_file
         self._debug = debug
-        self._v4l2_ctrls = v4l2_ctrls
+        self._output_params = output_params
 
         if PYGAME_AVAILABLE and self._volume_level:
             pygame.init()
@@ -115,16 +115,16 @@ class DashCam:
     def _parse_output_path(self):
         if '%' not in self._output_path:
             logging.error(('Output path %s is invalid, %s formatters ' + \
-                'must be in string.') % (self._output_path, '%'))
+                'must be in string') % (self._output_path, '%'))
             exit(-1)
 
         if self._output_path[0] == '%':
             logging.error(('Output path %s is invalid, first character ' + \
-                'cannot be %.') % (self._output_path, '%'))
+                'cannot be %s') % (self._output_path, '%'))
             exit(-1)
 
         if not os.path.isdir(os.path.dirname(self._output_path)):
-            logging.error('Output path %s does not exist.' % self._output_path)
+            logging.error('Output path %s does not exist' % self._output_path)
             return
 
         if '%i' not in self._output_path:
@@ -132,16 +132,16 @@ class DashCam:
 
         if os.path.splitext(self._output_path)[0][-2:] != '%i':
             logging.error(('Output path %s is invalid, %s must be at ' + \
-                'end of filename.') % (self._output_path, '%i'))
+                'end of filename') % (self._output_path, '%i'))
             exit(-1)
         if os.path.splitext(self._output_path)[0][-4] == '%':
             logging.error(('Output path %s is invalid, %s must be ' + \
-                'seperated from other %s formaters.') % (
+                'seperated from other %s formaters') % (
                 self._output_path, '%i', '%'))
             exit(-1)
         if os.path.splitext(self._output_path)[0][-3].isdigit():
             logging.error(('Output path %s is invalid, %s cannot ' + \
-                'be preceded by a number.') % (self._output_path, '%i'))
+                'be preceded by a number') % (self._output_path, '%i'))
             exit(-1)
 
         path = os.path.dirname(self._output_path)
@@ -168,7 +168,7 @@ class DashCam:
             stat = os.statvfs(os.path.dirname(self._output_path))
             return float(stat.f_bavail) / stat.f_blocks
         except OSError:
-            logging.error('Failed to get free space for %s directory.' % (
+            logging.error('Failed to get free space for %s directory' % (
                 os.path.dirname(self._output_path)))
             return 1
 
@@ -178,7 +178,7 @@ class DashCam:
         logging.debug('Open process log file')
         self._log_file = open(self._log_file, 'a')
 
-    def _read_stream_state(self):
+    def _read_v4l2_stream_state(self):
         try:
             with open(self._stream_state_path) as state_file:
                 if state_file.read().strip() == '1':
@@ -200,7 +200,7 @@ class DashCam:
             return
         pygame.mixer.music.play()
 
-    def _generate_proc_args(self):
+    def _generate_v4l2_proc_args(self):
         args = []
 
         args.append('dashcam-stream')
@@ -236,18 +236,60 @@ class DashCam:
         args.append('--segment-length')
         args.append(str(self._output_segment_length))
 
-        if self._output_segment_counter:
+        if self._output_segment_counter is not None:
             args.append('--segment-counter')
             args.append(str(self._output_segment_counter))
 
         return args
 
+    def _generate_rpi_proc_args(self):
+        args = []
+
+        if os.path.isfile('/opt/vc/bin/raspivid'):
+            args.append('/opt/vc/bin/raspivid')
+        else:
+            args.append('raspivid')
+
+        args.append('--width')
+        args.append(str(self._input_width))
+
+        args.append('--height')
+        args.append(str(self._input_height))
+
+        args.append('--framerate')
+        args.append(str(self._input_frame_rate))
+
+        args.append('--timeout')
+        args.append(str(self._output_segment_length * 1000))
+
+        args.append('--nopreview')
+
+        args.append('--output')
+        outpath_path = str(self._output_path)
+        if self._output_segment_counter is not None:
+            if self._output_segment_counter > 9999:
+                self._output_segment_counter = 0
+            outpath_path = outpath_path.replace('%i',
+                '%04d' % self._output_segment_counter)
+            self._output_segment_counter += 1
+        outpath_path = time.strftime(outpath_path)
+        args.append(outpath_path)
+
+        if self._output_params:
+            for output_param in self._output_params:
+                param_value = self._output_params[output_param]
+                args.append('--%s' % output_param)
+                if param_value:
+                    args.append(str(param_value))
+
+        return args
+
     def _apply_v4l2_ctrls(self):
-        if not self._v4l2_ctrls:
+        if not self._output_params:
             return
 
-        for ctrl_name in self._v4l2_ctrls:
-            ctrl_value = self._v4l2_ctrls[ctrl_name]
+        for ctrl_name in self._output_params:
+            ctrl_value = self._output_params[ctrl_name]
             args = [
                 'v4l2-ctl',
                 '--device',
@@ -266,7 +308,7 @@ class DashCam:
             self._light_gpio_pin = int(self._light_gpio_pin)
         except ValueError:
             self._light_gpio_pin = None
-            logging.error('Light GPIO pin must be int, LED disabled.')
+            logging.error('Light GPIO pin must be int, LED disabled')
             return
         # Save refrence to function for __del__
         self._gpio_cleanup = GPIO.cleanup
@@ -277,15 +319,81 @@ class DashCam:
     def _setup_bbio_gpio(self):
         if not isinstance(self._light_gpio_pin, basestring):
             self._light_gpio_pin = None
-            logging.error('Light GPIO pin must be string, LED disabled.')
+            logging.error('Light GPIO pin must be string, LED disabled')
             return
         # Save refrence to function for __del__
         self._gpio_cleanup = GPIO.cleanup
         GPIO.setup(self._light_gpio_pin, GPIO.OUT)
         logging.info('BBIO.GPIO initialized')
 
+    def _start_v4l2_stream_proc(self):
+        self._remove_stream_state()
+        self.set_stream_state(False)
+
+        # Check for webcam
+        if not os.access(self._input_device, os.R_OK):
+            logging.warning('Video device %s does not exist, waiting...' % (
+                self._input_device))
+            return
+
+        logging.info('Starting stream process')
+        self._open_log_file()
+        self._apply_v4l2_ctrls()
+        self._stream_proc = subprocess.Popen(self._generate_v4l2_proc_args(),
+            stdin=subprocess.PIPE, stdout=self._log_file,
+            stderr=self._log_file)
+
+    def _stop_v4l2_stream_proc(self):
+        if not self._stream_proc:
+            return
+        logging.info('Stopping stream process')
+        self._stream_proc.send_signal(signal.SIGINT)
+
+    def _wait_v4l2_stream_proc(self):
+        if not self._stream_proc:
+            return
+        logging.info('Waiting for stream process')
+        self._stream_proc.wait()
+        self._remove_stream_state()
+
+    def _poll_v4l2_stream_proc(self):
+        if not self._stream_proc:
+            return 0
+        returncode = self._stream_proc.poll()
+        if returncode is not None:
+            logging.info('Stream process ended with exit code %s' % (
+                self._stream_proc.returncode))
+        return returncode
+
+    def _start_rpi_stream_proc(self):
+        self.set_stream_state(True)
+
+        logging.info('Starting stream process')
+        self._open_log_file()
+
+        try:
+            subprocess.check_call(self._generate_rpi_proc_args(),
+                stdin=subprocess.PIPE, stdout=self._log_file,
+                stderr=self._log_file)
+        except subprocess.CalledProcessError, returncode:
+            logging.error('Stream process ended with exit code %s' % (
+                returncode))
+            self.set_stream_state(False)
+            time.sleep(1)
+
+    def _start_v4l2(self):
+        while self._running:
+            if self._poll_v4l2_stream_proc() is not None:
+                self._start_v4l2_stream_proc()
+            self._read_v4l2_stream_state()
+            time.sleep(0.1)
+
+    def _start_rpi(self):
+        while self._running:
+            self._start_rpi_stream_proc()
+
     def _prune_segments_thread(self):
-        logging.debug('Prune segments thread started.')
+        logging.debug('Prune segments thread started')
         while self._running:
             self.prune_segments()
             time.sleep(1)
@@ -340,45 +448,6 @@ class DashCam:
         else:
             logging.info('Stream stopped')
 
-    def start_stream_proc(self):
-        self._remove_stream_state()
-        self.set_stream_state(False)
-
-        # Check for webcam
-        if not os.access(self._input_device, os.R_OK):
-            logging.warning('Video device %s does not exist, waiting...' % (
-                self._input_device))
-            return
-
-        logging.info('Starting stream process')
-        self._open_log_file()
-        self._apply_v4l2_ctrls()
-        self._stream_proc = subprocess.Popen(self._generate_proc_args(),
-            stdin=subprocess.PIPE, stdout=self._log_file,
-            stderr=self._log_file)
-
-    def stop_stream_proc(self):
-        if not self._stream_proc:
-            return
-        logging.info('Stopping stream process')
-        self._stream_proc.send_signal(signal.SIGINT)
-
-    def wait_stream_proc(self):
-        if not self._stream_proc:
-            return
-        logging.info('Waiting for stream process')
-        self._stream_proc.wait()
-        self._remove_stream_state()
-
-    def poll_stream_proc(self):
-        if not self._stream_proc:
-            return 0
-        returncode = self._stream_proc.poll()
-        if returncode is not None:
-            logging.info('Stream process ended with exit code %s' % (
-                self._stream_proc.returncode))
-        return returncode
-
     def start(self):
         if self._running:
             raise TypeError('Dashcam is already running.')
@@ -387,11 +456,10 @@ class DashCam:
         if self._min_free_space:
             threading.Thread(target=self._prune_segments_thread).start()
 
-        while self._running:
-            if self.poll_stream_proc() is not None:
-                self.start_stream_proc()
-            self._read_stream_state()
-            time.sleep(0.1)
+        if self._input_device == 'raspivid':
+            self._start_rpi()
+        else:
+            self._start_v4l2()
 
     def stop(self):
         if not self._running:
@@ -399,7 +467,8 @@ class DashCam:
         self._running = False
         if RPI_AVAILABLE or BBIO_AVAILABLE:
             logging.debug('Cleaning up GPIO...')
+            self._light_gpio_pin = None
             self._gpio_cleanup()
         logging.info('Exiting...')
-        self.stop_stream_proc()
-        self.wait_stream_proc()
+        self._stop_v4l2_stream_proc()
+        self._wait_v4l2_stream_proc()

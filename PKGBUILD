@@ -1,8 +1,8 @@
 # Maintainer: Zachary Huff <zach.huff.386@gmail.com>
 
 pkgname=dashcam
-pkgver=0.1.0
-pkgrel=2
+pkgver=0.1.1
+pkgrel=1
 pkgdesc="C/Python dashcam built with Gstreamer for Raspberry Pi/BeagleBone Black"
 arch=("any")
 license=("GPL3")

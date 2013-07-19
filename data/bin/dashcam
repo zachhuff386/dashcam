@@ -47,7 +47,7 @@ min_free_space = None
 light_gpio_pin = None
 log_file = None
 debug = None
-v4l2_ctrls = None
+output_params = None
 
 if hasattr(config, 'input_device'):
     input_device = config.input_device
@@ -79,8 +79,8 @@ if hasattr(config, 'log_file_path'):
     log_file = config.log_file_path
 if hasattr(config, 'debug'):
     debug = config.debug
-if hasattr(config, 'v4l2_ctrls'):
-    v4l2_ctrls = config.v4l2_ctrls
+if hasattr(config, 'output_params'):
+    output_params = config.output_params
 
 if log_file:
     log_file_handler = logging.FileHandler(filename=log_file)
@@ -108,7 +108,7 @@ dash_cam = dashcam.DashCam(
     light_gpio_pin=light_gpio_pin,
     log_file=log_file,
     debug=debug,
-    v4l2_ctrls=v4l2_ctrls,
+    output_params=output_params,
 )
 
 def signal_handler(signal, frame):
