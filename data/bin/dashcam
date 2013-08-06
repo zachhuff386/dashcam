@@ -23,7 +23,6 @@ else:
     except IOError:
         config = imp.load_source('config', '/etc/dashcam.conf')
 
-
 if options.daemon:
     pid = os.fork()
     if pid > 0:
