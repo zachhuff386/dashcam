@@ -24,11 +24,11 @@ optdepends=(
     "python2-raspberry-gpio: Raspberry Pi LED support"
     "python2-bbio: BeagleBone Black LED support"
 )
-provides=("dashcam")
-conflicts=("dashcam")
+provides=("${pkgname}")
+conflicts=("${pkgname}")
 source=("${url}/archive/${pkgver}.tar.gz")
 sha256sums=("CHANGE_ME")
-backup=("etc/dashcam.conf")
+backup=("etc/${pkgname}.conf")
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
