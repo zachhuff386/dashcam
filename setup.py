@@ -17,6 +17,9 @@ setup(
         ('bin', ['data/bin/dashcam']),
         ('bin', ['build/dashcam-stream']),
     ],
+    platforms=[
+        'Linux',
+    ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Console',
